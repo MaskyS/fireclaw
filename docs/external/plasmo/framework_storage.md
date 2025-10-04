@@ -1,0 +1,477 @@
+---
+url: "https://docs.plasmo.com/framework/storage"
+title: "Storage API – Plasmo"
+---
+
+[**_plasmo_**](https://docs.plasmo.com/)
+
+`CTRL K`
+
+[GitHubGitHub (opens in a new tab)](https://github.com/PlasmoHQ/plasmo) [DiscordDiscord (opens in a new tab)](https://www.plasmo.com/s/d)
+
+`CTRL K`
+
+- [Welcome](https://docs.plasmo.com/)
+- Framework
+
+
+
+
+- [Getting Started](https://docs.plasmo.com/framework)
+- Workflows
+
+
+
+
+- [New Extension](https://docs.plasmo.com/framework/workflows/new)
+- [Development Server](https://docs.plasmo.com/framework/workflows/dev)
+- [Production Build](https://docs.plasmo.com/framework/workflows/build)
+- [Submission](https://docs.plasmo.com/framework/workflows/submit)
+- [FAQ](https://docs.plasmo.com/framework/workflows/faq)
+
+- [Extension Pages](https://docs.plasmo.com/framework/ext-pages)
+- [Tab Pages](https://docs.plasmo.com/framework/tab-pages)
+- [Sandbox Pages](https://docs.plasmo.com/framework/sandbox-pages)
+- [Content Scripts](https://docs.plasmo.com/framework/content-scripts)
+- [Content Scripts UI](https://docs.plasmo.com/framework/content-scripts-ui)
+
+
+
+
+- [Life Cycle](https://docs.plasmo.com/framework/content-scripts-ui/life-cycle)
+- [Styling](https://docs.plasmo.com/framework/content-scripts-ui/styling)
+
+- [Background SW](https://docs.plasmo.com/framework/background-service-worker)
+- [Messaging](https://docs.plasmo.com/framework/messaging)
+- [Storage](https://docs.plasmo.com/framework/storage)
+- [Environment Variables](https://docs.plasmo.com/framework/env)
+- [Import Resolution](https://docs.plasmo.com/framework/import)
+- [Assets](https://docs.plasmo.com/framework/assets)
+- [Icon](https://docs.plasmo.com/framework/icon)
+- [Locales](https://docs.plasmo.com/framework/locales)
+- [Remote Code](https://docs.plasmo.com/framework/remote-code)
+- Customization
+
+
+
+
+- [Principles](https://docs.plasmo.com/framework/customization)
+- [Manifest Override](https://docs.plasmo.com/framework/customization/manifest)
+- [Use src Directory](https://docs.plasmo.com/framework/customization/src)
+- [Replace the HTML](https://docs.plasmo.com/framework/customization/html)
+- [Alias Imports](https://docs.plasmo.com/framework/customization/alias)
+- [Internal Paths](https://docs.plasmo.com/framework/customization/internal-path)
+
+- Itero
+
+
+
+
+- [Getting Started](https://docs.plasmo.com/itero)
+- [TestBed](https://docs.plasmo.com/itero/test-bed)
+- [Team](https://docs.plasmo.com/itero/team)
+- [GitHub Extension Builder](https://docs.plasmo.com/itero/builder)
+- [Publisher](https://docs.plasmo.com/itero/publisher)
+- [MV2 to MV3](https://docs.plasmo.com/itero/mv2-to-mv3)
+- [GitHub Integration](https://docs.plasmo.com/itero/github)
+- [Manual API](https://docs.plasmo.com/itero/api)
+
+- [Quickstarts](https://docs.plasmo.com/quickstarts)
+
+
+
+
+- [Migrate to Plasmo](https://docs.plasmo.com/quickstarts/migrate-to-plasmo)
+- [Quickstart: Next.js](https://docs.plasmo.com/quickstarts/with-nextjs)
+- [Quickstart: Stripe](https://docs.plasmo.com/quickstarts/with-stripe)
+- [Quickstart: Redux](https://docs.plasmo.com/quickstarts/with-redux)
+- [Quickstart: Tailwind CSS](https://docs.plasmo.com/quickstarts/with-tailwindcss)
+- [Quickstart: Supabase](https://docs.plasmo.com/quickstarts/with-supabase)
+- [Quickstart: Firebase Auth](https://docs.plasmo.com/quickstarts/with-firebase-authentication)
+- [Quickstart: Google Analytics](https://docs.plasmo.com/quickstarts/with-google-analytics)
+- [Quickstart: Chrome Storage](https://docs.plasmo.com/quickstarts/with-chrome-storage)
+
+- [Welcome](https://docs.plasmo.com/)
+- Framework
+
+
+
+
+- [Getting Started](https://docs.plasmo.com/framework)
+- Workflows
+
+
+
+
+- [New Extension](https://docs.plasmo.com/framework/workflows/new)
+- [Development Server](https://docs.plasmo.com/framework/workflows/dev)
+- [Production Build](https://docs.plasmo.com/framework/workflows/build)
+- [Submission](https://docs.plasmo.com/framework/workflows/submit)
+- [FAQ](https://docs.plasmo.com/framework/workflows/faq)
+
+- [Extension Pages](https://docs.plasmo.com/framework/ext-pages)
+- [Tab Pages](https://docs.plasmo.com/framework/tab-pages)
+- [Sandbox Pages](https://docs.plasmo.com/framework/sandbox-pages)
+- [Content Scripts](https://docs.plasmo.com/framework/content-scripts)
+- [Content Scripts UI](https://docs.plasmo.com/framework/content-scripts-ui)
+
+
+
+
+- [Life Cycle](https://docs.plasmo.com/framework/content-scripts-ui/life-cycle)
+- [Styling](https://docs.plasmo.com/framework/content-scripts-ui/styling)
+
+- [Background SW](https://docs.plasmo.com/framework/background-service-worker)
+- [Messaging](https://docs.plasmo.com/framework/messaging)
+- [Storage](https://docs.plasmo.com/framework/storage)
+  - [Installation](https://docs.plasmo.com/framework/storage#installation)
+  - [Usage Examples](https://docs.plasmo.com/framework/storage#usage-examples)
+  - [Storage](https://docs.plasmo.com/framework/storage#storage)
+  - [Secure Storage](https://docs.plasmo.com/framework/storage#secure-storage)
+  - [React Hook API](https://docs.plasmo.com/framework/storage#react-hook-api)
+- [Environment Variables](https://docs.plasmo.com/framework/env)
+- [Import Resolution](https://docs.plasmo.com/framework/import)
+- [Assets](https://docs.plasmo.com/framework/assets)
+- [Icon](https://docs.plasmo.com/framework/icon)
+- [Locales](https://docs.plasmo.com/framework/locales)
+- [Remote Code](https://docs.plasmo.com/framework/remote-code)
+- Customization
+
+
+
+
+- [Principles](https://docs.plasmo.com/framework/customization)
+- [Manifest Override](https://docs.plasmo.com/framework/customization/manifest)
+- [Use src Directory](https://docs.plasmo.com/framework/customization/src)
+- [Replace the HTML](https://docs.plasmo.com/framework/customization/html)
+- [Alias Imports](https://docs.plasmo.com/framework/customization/alias)
+- [Internal Paths](https://docs.plasmo.com/framework/customization/internal-path)
+
+- Itero
+
+
+
+
+- [Getting Started](https://docs.plasmo.com/itero)
+- [TestBed](https://docs.plasmo.com/itero/test-bed)
+- [Team](https://docs.plasmo.com/itero/team)
+- [GitHub Extension Builder](https://docs.plasmo.com/itero/builder)
+- [Publisher](https://docs.plasmo.com/itero/publisher)
+- [MV2 to MV3](https://docs.plasmo.com/itero/mv2-to-mv3)
+- [GitHub Integration](https://docs.plasmo.com/itero/github)
+- [Manual API](https://docs.plasmo.com/itero/api)
+
+- [Quickstarts](https://docs.plasmo.com/quickstarts)
+
+
+
+
+- [Migrate to Plasmo](https://docs.plasmo.com/quickstarts/migrate-to-plasmo)
+- [Quickstart: Next.js](https://docs.plasmo.com/quickstarts/with-nextjs)
+- [Quickstart: Stripe](https://docs.plasmo.com/quickstarts/with-stripe)
+- [Quickstart: Redux](https://docs.plasmo.com/quickstarts/with-redux)
+- [Quickstart: Tailwind CSS](https://docs.plasmo.com/quickstarts/with-tailwindcss)
+- [Quickstart: Supabase](https://docs.plasmo.com/quickstarts/with-supabase)
+- [Quickstart: Firebase Auth](https://docs.plasmo.com/quickstarts/with-firebase-authentication)
+- [Quickstart: Google Analytics](https://docs.plasmo.com/quickstarts/with-google-analytics)
+- [Quickstart: Chrome Storage](https://docs.plasmo.com/quickstarts/with-chrome-storage)
+
+System
+
+On This Page
+
+- [Installation](https://docs.plasmo.com/framework/storage#installation)
+- [Usage Examples](https://docs.plasmo.com/framework/storage#usage-examples)
+- [Storage](https://docs.plasmo.com/framework/storage#storage)
+- [Customizing the storage area](https://docs.plasmo.com/framework/storage#customizing-the-storage-area)
+- [Automatically copy data to localStorage](https://docs.plasmo.com/framework/storage#automatically-copy-data-to-localstorage)
+- [Watch (for state sync)](https://docs.plasmo.com/framework/storage#watch-for-state-sync)
+- [Secure Storage](https://docs.plasmo.com/framework/storage#secure-storage)
+- [React Hook API](https://docs.plasmo.com/framework/storage#react-hook-api)
+- [Watch and render a value](https://docs.plasmo.com/framework/storage#watch-and-render-a-value)
+- [With a custom storage instance](https://docs.plasmo.com/framework/storage#with-a-custom-storage-instance)
+- [Rendering initial value WITHOUT persisting](https://docs.plasmo.com/framework/storage#rendering-initial-value-without-persisting)
+- [Rendering AND persisting initial value](https://docs.plasmo.com/framework/storage#rendering-and-persisting-initial-value)
+- [Advanced usage](https://docs.plasmo.com/framework/storage#advanced-usage)
+- [Usage with Firefox](https://docs.plasmo.com/framework/storage#usage-with-firefox)
+
+[Question? Give us feedback → (opens in a new tab)](https://github.com/PlasmoHQ/docs/issues/new?title=Feedback%20for%20%E2%80%9CStorage%20API%E2%80%9D&labels=feedback) [Edit this page on GitHub](https://github.com/PlasmoHQ/docs/edit/main/src/pages/framework/storage.mdx)
+
+Framework
+
+Storage
+
+# Storage API
+
+[![See License](https://img.shields.io/npm/l/plasmo)](https://github.com/PlasmoHQ/plasmo/blob/main/LICENSE)[![NPM Install](https://img.shields.io/npm/v/@plasmohq/storage?logo=npm)](https://www.npmjs.com/package/@plasmohq/storage)[![Follow PlasmoHQ on Twitter](https://img.shields.io/twitter/follow/plasmohq?logo=twitter)](https://www.twitter.com/plasmohq)[![Watch our Live DEMO every Friday](https://img.shields.io/twitch/status/plasmohq?logo=twitch&logoColor=white)](https://www.twitch.tv/plasmohq)[![Join our Discord for support and chat about our projects](https://img.shields.io/discord/946290204443025438?logo=discord&logoColor=white)](https://www.plasmo.com/s/d)
+
+`@plasmohq/storage` is a utility library from [plasmo (opens in a new tab)](https://www.plasmo.com/) that abstracts the persistent storage API available to browser extensions. It falls back to localStorage when the extension storage API is unavailable, allowing for state sync between extension pages, content scripts, background service workers and web pages.
+
+> This library will enable the `storage` permission automatically if used as a **dependencies** in a [Plasmo framework (opens in a new tab)](https://docs.plasmo.com/) project
+
+## Installation [Permalink for this section](https://docs.plasmo.com/framework/storage\#installation)
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+pnpm install @plasmohq/storage
+```
+
+The package exports the following modules, in both ESM and CJS format:
+
+| Modules | Description |
+| :-- | :-- |
+| `@plasmohq/storage` | The base [Storage API](https://docs.plasmo.com/framework/storage#storage) |
+| `@plasmohq/storage/secure` | The [SecureStorage API](https://docs.plasmo.com/framework/storage#secure-storage) |
+| `@plasmohq/storage/hook` | The [React Hook Storage API](https://docs.plasmo.com/framework/storage#react-hook-api) |
+
+## Usage Examples [Permalink for this section](https://docs.plasmo.com/framework/storage\#usage-examples)
+
+- See [with-storage (opens in a new tab)](https://github.com/PlasmoHQ/examples/tree/main/with-storage) for an example of how to use this library to sync state between options and popups.
+- See [with-redux (opens in a new tab)](https://github.com/PlasmoHQ/examples/tree/main/with-redux) for an example of how to use this library as your Redux persistent layer (crucial for MV3).
+- See [MICE (opens in a new tab)](https://github.com/PlasmoHQ/mice) for an experimental use case of this library integrated with WebRTC to pipe messages between browsers via an extension.
+
+## Storage [Permalink for this section](https://docs.plasmo.com/framework/storage\#storage)
+
+The base Storage API is designed to be easy to use. It is usable in every extension runtime such as background service workers, content scripts and extension pages.
+
+Get/set data without the need to JSON.stringify/parse. As long as the data you are storing is serializable (plain object or of primitive type), it can be stored:
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+import { Storage } from "@plasmohq/storage"
+
+const storage = new Storage()
+
+await storage.set("key", "value")
+const data = await storage.get("key") // "value"
+
+await storage.set("capt", { color: "red" })
+const data2 = await storage.get("capt") // { color: "red" }
+```
+
+### Customizing the storage area [Permalink for this section](https://docs.plasmo.com/framework/storage\#customizing-the-storage-area)
+
+The storage area defaults to "sync", which means the data is synced across all instances of Chrome where the user is logged in.
+
+You can see all of the other possible scopes Plasmo supports in the [Chrome Storage API documentation (opens in a new tab)](https://developer.chrome.com/docs/extensions/reference/api/storage#storage_areas).
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const storage = new Storage({
+  area: "local"
+})
+```
+
+### Automatically copy data to localStorage [Permalink for this section](https://docs.plasmo.com/framework/storage\#automatically-copy-data-to-localstorage)
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const storage = new Storage({
+  copiedKeyList: ["shield-modulation"]
+})
+```
+
+The code above will copy the data to Web localStorage when used with content scripts or extension pages.
+
+### Watch (for state sync) [Permalink for this section](https://docs.plasmo.com/framework/storage\#watch-for-state-sync)
+
+To watch for changes when using the Storage API:
+
+background.ts
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+import { Storage } from "@plasmohq/storage"
+
+const storage = new Storage()
+
+await storage.set("serial-number", 47)
+await storage.set("make", "plasmo-corp")
+
+storage.watch({
+  "serial-number": (c) => {
+    console.log(c.newValue)
+  },
+  make: (c) => {
+    console.log(c.newValue)
+  }
+})
+
+await storage.set("serial-number", 96)
+await storage.set("make", "PlasmoHQ")
+```
+
+This can be used as a layer to communicate messages across your extension. We demonstrate this in the [with-redux (opens in a new tab)](https://github.com/PlasmoHQ/examples/tree/main/with-redux) example.
+
+📢
+
+**NOTE:** The Storage API is not available in a Content Script when it is executed in the 'MAIN' world, as it loses its access to the Chrome Extensions APIs.
+
+## Secure Storage [Permalink for this section](https://docs.plasmo.com/framework/storage\#secure-storage)
+
+The SecureStorage API extends Storage with data encryption and decryption for at-rest cold storage of sensitive keys. It utilizes the [Web Crypto `SubtleCrypto` API (opens in a new tab)](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto) which only works in secure contexts (HTTPS).
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+import { SecureStorage } from "@plasmohq/storage/secure"
+
+const storage = new SecureStorage()
+
+await storage.setPassword("roosevelt") // The only diff
+
+await storage.set("key", "value")
+const data = await storage.get("key") // "value"
+
+await storage.set("capt", { color: "red" })
+const data2 = await storage.get("capt") // { color: "red" }
+```
+
+## React Hook API [Permalink for this section](https://docs.plasmo.com/framework/storage\#react-hook-api)
+
+The hook API is designed to streamline the state-syncing workflow between the different pieces of an extension. There are many ways it can be used, but first and foremost you will want to import the hook into your React component:
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+import { useStorage } from "@plasmohq/storage/hook"
+```
+
+### Watch and render a value [Permalink for this section](https://docs.plasmo.com/framework/storage\#watch-and-render-a-value)
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const [hailingFrequency] = useStorage("hailing")
+...
+{hailingFrequency}
+```
+
+### With a custom storage instance [Permalink for this section](https://docs.plasmo.com/framework/storage\#with-a-custom-storage-instance)
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+import { Storage } from "@plasmohq/storage"
+...
+const [hailingFrequency] = useStorage({
+  key: "hailing",
+  instance: new Storage({
+    area: "local"
+  })
+})
+```
+
+### Rendering initial value WITHOUT persisting [Permalink for this section](https://docs.plasmo.com/framework/storage\#rendering-initial-value-without-persisting)
+
+"Persisting" means writing into the internal memory.
+
+By not persisting the value, only this specific instance of the hook will render the given initial value when there is no value in storage. Other instances can either show `undefined` OR specify their own initial value. To elaborate on this:
+
+Given a `popup.tsx` that sets a static initial value:
+
+popup.tsx
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const [hailingFrequency, setHailingFrequency] = useStorage("hailing", "42")
+...
+<input value={hailingFrequency} onChange={(e) =>
+  setHailingFrequency(e.target.value)
+  }/> // "42"
+```
+
+If we subscribe to this key in `content.tsx`, we will see it be `undefined` until `setHailingFrequency` is called with a defined value:
+
+content.tsx
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const [hailingFrequency] = useStorage("hailing")
+
+return <p>{hailingFrequency}</p> // undefined
+```
+
+If we subscribe to this key in `options.tsx`, but with a different static initial value, we will see that value instead:
+
+options.tsx
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const [hailingFrequency] = useStorage("hailing", "147")
+
+return <p>{hailingFrequency}</p> // "147"
+```
+
+With the above setup, suppose we call `setHailingFrequency("8472")` in any of the instances above, we will see that all instances will now show "8472" and will now track the value in storage instead of the initial value.
+
+### Rendering AND persisting initial value [Permalink for this section](https://docs.plasmo.com/framework/storage\#rendering-and-persisting-initial-value)
+
+By using a function instead of a static value, the initial value will be persisted in storage memory. The initialize function has one parameter which is the existing value in storage. If there is no value, it is `undefined`.
+
+Let's say we have a `popup.tsx` that initialize the state to "42" if there is nothing in storage:
+
+popup.tsx
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const [hailingFrequency, setHailingFrequency] = useStorage("hailing", (v) => v === undefined ? "42": v)
+...
+{hailingFrequency} // "42"
+```
+
+Then, if we make a new hook instance in our `content.tsx` or `options.tsx`, we will see the initial value that persisted, without calling `setHailingFrequency`:
+
+content.tsx
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const [hailingFrequency] = useStorage("hailing")
+
+return <p>{hailingFrequency}</p> // "42"
+```
+
+### Advanced usage [Permalink for this section](https://docs.plasmo.com/framework/storage\#advanced-usage)
+
+When dealing with form input or real-time input, you might need the following:
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+const [hailingFrequency, setHailingFrequency, {\
+  setRenderValue,\
+  setStoreValue,\
+  remove\
+}] = useStorage("hailing")
+
+return <>
+  <input value={hailingFrequency} onChange={(e) => setRenderValue(e.target.value)}/>
+  <button onClick={() => setStoreValue()}>
+    Save
+  </button>
+  <button onClick={() => remove()}>
+    Remove
+  </button>
+</>
+
+```
+
+### Usage with Firefox [Permalink for this section](https://docs.plasmo.com/framework/storage\#usage-with-firefox)
+
+To use the storage API on Firefox during development you need to add an Add-on ID to your manifest, otherwise, you will get this error:
+
+> Error: The storage API will not work with a temporary addon ID. Please add an explicit addon ID to your manifest. For more information see [https://mzl.la/3lPk1aE (opens in a new tab)](https://mzl.la/3lPk1aE).
+
+To add an Add-on ID to your manifest, add this to your `package.json`:
+
+```nx-border-black nx-border-opacity-[0.04] nx-bg-opacity-[0.03] nx-bg-black nx-break-words nx-rounded-md nx-border nx-py-0.5 nx-px-[.25em] nx-text-[.9em] dark:nx-border-white/10 dark:nx-bg-white/10
+"manifest": {
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "your-id@example.com"
+    }
+  }
+}
+```
+
+The format of Add-on IDs differ between manifest versions.
+
+- Manifest V2: `your-id@example.com`
+- Manifest V3: `{ed7ba470-8e54-465e-825c-99712043e01c}` (any UUID)
+
+Once your extension is published, the Add-on ID defined in the `package.json` file _should_ be displayed in your extension's Developer Page under _"Technical Details > UUID"_.
+
+**Note:** The Add-on ID used during development (i.e. the one defined in the manifest) will likely be the one Mozilla assigns to your when publishing. If it's not and one is
+generated for you, you will have to update the `package.json` file with the new ID.
+
+Add-on IDs are unique and the same one cannot be used for multiple extensions (both manifest versions).
+
+Last updated on October 8, 2024
+
+[Messaging](https://docs.plasmo.com/framework/messaging "Messaging") [Environment Variables](https://docs.plasmo.com/framework/env "Environment Variables")
+
+System
+
+* * *
+
+[© 2025 Plasmo Corp. All rights reserved. v0.4.0](https://www.plasmo.com/)
