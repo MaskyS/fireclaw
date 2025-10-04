@@ -1,7 +1,6 @@
 {
   "name": "firecrawl-extension",
   "version": "1.0.0",
-  "main": "index.js",
   "directories": {
     "doc": "docs"
   },
@@ -14,7 +13,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Scrape or crawl the current page with Firecrawl, then copy or download results.",
+  "description": "Quickly Scrape/Crawl the current website & copy Markdown / JSON / HTML with Firecrawl.",
   "dependencies": {
     "@plasmohq/messaging": "^0.7.2",
     "@plasmohq/storage": "^1.15.0",
@@ -31,7 +30,7 @@
     "typescript": "^5.9.3"
   },
   "type": "module",
-  "displayName": "Firecrawl Extension",
+  "displayName": "Fireclaw - Firecrawl Extension",
   "manifest": {
     "permissions": [
       "activeTab",
