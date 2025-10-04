@@ -1,0 +1,47 @@
+{
+  "name": "firecrawl-extension",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "plasmo dev --verbose",
+    "build": "plasmo build",
+    "package": "plasmo package",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Scrape or crawl the current page with Firecrawl, then copy or download results.",
+  "dependencies": {
+    "@plasmohq/messaging": "^0.7.2",
+    "@plasmohq/storage": "^1.15.0",
+    "mobx": "^6.13.0",
+    "mobx-react-lite": "^4.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "remeda": "^2.32.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.22",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "plasmo": "^0.90.5",
+    "typescript": "^5.9.3"
+  },
+  "type": "module",
+  "displayName": "Firecrawl Extension",
+  "manifest": {
+    "permissions": [
+      "activeTab",
+      "tabs",
+      "downloads",
+      "storage"
+    ],
+    "host_permissions": [
+      "https://api.firecrawl.dev/*"
+    ]
+  }
+}
