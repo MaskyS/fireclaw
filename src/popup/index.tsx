@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStorage } from "@plasmohq/storage/hook";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import * as R from "remeda";
-import { observer } from "mobx-react-lite";
 
 import {
   DEFAULT_FORMAT_KEYS,
@@ -21,12 +21,14 @@ import {
 import {
   requestCrawlStart,
   requestCrawlStatus,
+  requestCreditUsage,
   requestScrape,
 } from "~lib/messaging";
 import { triggerDownload } from "~lib/download";
 import { colors, font, radii, shadows, space } from "./design";
 import {
   DEFAULT_CRAWL_FORM,
+  createEmptyCrawlForm,
   type CrawlFormState,
   type CrawlStage,
   type CrawlStartFailure,
@@ -40,7 +42,6 @@ import {
   type SitemapMode,
   type ViewMode,
 } from "./types";
-import { PopupStore } from "./store";
 
 const AVAILABLE_FORMAT_OPTIONS: ReadonlyArray<{
   key: FirecrawlFormatKey;
@@ -127,6 +128,245 @@ const previewSnippet = (content: string, expanded: boolean) => {
   return content.length > 400 ? `${content.slice(0, 400)}…` : content;
 };
 
+const queryClient = new QueryClient();
+
+const usePopupLogic = () => {
+  const [view, setViewState] = useState<ViewMode>("scrape");
+  const [scrapeStage, setScrapeStage] = useState<ScrapeStage>({ tag: "idle" });
+  const [crawlStage, setCrawlStage] = useState<CrawlStage>({ tag: "idle" });
+  const [lastScrape, setLastScrape] = useState<LastScrape | undefined>(undefined);
+  const [crawlStatus, setCrawlStatusState] = useState<CrawlStatusResponseBody | undefined>(
+    undefined,
+  );
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [optionsNotice, setOptionsNotice] = useState<string | undefined>(undefined);
+  const noticeTimerRef = useRef<number | undefined>(undefined);
+  const [crawlForm, setCrawlForm] = useState<CrawlFormState>(() => createEmptyCrawlForm());
+  const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
+  const [crawlData, setCrawlData] = useState<unknown[]>([]);
+  const [hasDownloadedCrawl, setHasDownloadedCrawl] = useState(false);
+  const [credits, setCredits] = useState<number | undefined>(undefined);
+
+  const crawlJobId = useMemo(
+    () => (crawlStage.tag === "success" ? crawlStage.payload.id : undefined),
+    [crawlStage],
+  );
+
+  const isPolling = useMemo(() => {
+    if (!crawlStatus || !crawlStatus.ok) {
+      return false;
+    }
+    const status = crawlStatus.status;
+    return status === "pending" || status === "processing";
+  }, [crawlStatus]);
+
+  const isCrawlComplete = useMemo(() => {
+    if (!crawlStatus || !crawlStatus.ok) {
+      return false;
+    }
+    return crawlStatus.status === "completed";
+  }, [crawlStatus]);
+
+  const setView = useCallback(
+    (next: ViewMode) => {
+      setViewState(next);
+      setOptionsOpen(false);
+    },
+    [],
+  );
+
+  const toggleOptions = useCallback(() => {
+    setOptionsOpen((current) => !current);
+  }, []);
+
+  const togglePreview = useCallback(() => {
+    setPreviewExpanded((current) => !current);
+  }, []);
+
+  const setNotice = useCallback((message: string) => {
+    setOptionsNotice(message);
+    if (noticeTimerRef.current !== undefined) {
+      window.clearTimeout(noticeTimerRef.current);
+    }
+    noticeTimerRef.current = window.setTimeout(() => {
+      setOptionsNotice(undefined);
+      noticeTimerRef.current = undefined;
+    }, 3_000);
+  }, []);
+
+  const clearNotice = useCallback(() => {
+    setOptionsNotice(undefined);
+    if (noticeTimerRef.current !== undefined) {
+      window.clearTimeout(noticeTimerRef.current);
+      noticeTimerRef.current = undefined;
+    }
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage((current) => (current === message ? current : message));
+  }, []);
+
+  const clearToast = useCallback(() => {
+    setToastMessage(undefined);
+  }, []);
+
+  const scrapeStarted = useCallback((intent: ScrapeIntent) => {
+    setScrapeStage({ tag: "loading", intent });
+    setPreviewExpanded(false);
+  }, []);
+
+  const scrapeFailed = useCallback(
+    (intent: ScrapeIntent, message: string, detail?: ScrapeFailure) => {
+      setScrapeStage({
+        tag: "error",
+        intent,
+        message,
+        detail,
+      });
+    },
+    [],
+  );
+
+  const scrapeSucceeded = useCallback(
+    (intent: ScrapeIntent, payload: ScrapeSuccess, note?: string) => {
+      setScrapeStage({
+        tag: "success",
+        intent,
+        payload,
+        note,
+      });
+      setLastScrape({
+        primary: payload.primary,
+        format: payload.primaryFormat,
+        mimeType: payload.mimeType,
+        timestamp: new Date().toISOString(),
+        raw: payload.raw,
+        payload,
+      });
+      setPreviewExpanded(false);
+    },
+    [],
+  );
+
+  const scrapeNote = useCallback(
+    (intent: ScrapeIntent, note: string) => {
+      if (!lastScrape) {
+        return;
+      }
+      setScrapeStage({
+        tag: "success",
+        intent,
+        payload: lastScrape.payload,
+        note,
+      });
+    },
+    [lastScrape],
+  );
+
+  const crawlStarted = useCallback(() => {
+    setCrawlStage({ tag: "loading" });
+    setCrawlStatusState(undefined);
+    setHasDownloadedCrawl(false);
+  }, []);
+
+  const crawlFailed = useCallback(
+    (message: string, detail?: CrawlStartFailure) => {
+      setCrawlStage({
+        tag: "error",
+        message,
+        detail,
+      });
+    },
+    [],
+  );
+
+  const crawlSucceeded = useCallback((payload: CrawlStartSuccess) => {
+    setCrawlStage({ tag: "success", payload });
+  }, []);
+
+  const setCrawlStatus = useCallback((payload: CrawlStatusResponseBody) => {
+    setCrawlStatusState(payload);
+    if (payload.ok && payload.payload?.data && Array.isArray(payload.payload.data)) {
+      const data = payload.payload.data as unknown[];
+      setCrawlData((current) => [...current, ...data]);
+    }
+  }, []);
+
+  const updateCrawlForm: <Field extends keyof CrawlFormState>(
+    field: Field,
+    value: CrawlFormState[Field],
+  ) => void = useCallback((field, value) => {
+    setCrawlForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }, []);
+
+  const resetCrawlForm = useCallback(() => {
+    setCrawlForm(createEmptyCrawlForm());
+  }, []);
+
+  const resetCrawlData = useCallback(() => {
+    setCrawlData([]);
+  }, []);
+
+  const markCrawlDownloaded = useCallback(() => {
+    setHasDownloadedCrawl(true);
+  }, []);
+
+  const setCreditsAmount = useCallback((amount: number | undefined) => {
+    setCredits(amount);
+  }, []);
+
+  const dispose = useCallback(() => {
+    if (noticeTimerRef.current !== undefined) {
+      window.clearTimeout(noticeTimerRef.current);
+      noticeTimerRef.current = undefined;
+    }
+  }, []);
+
+  return {
+    view,
+    setView,
+    optionsOpen,
+    toggleOptions,
+    previewExpanded,
+    togglePreview,
+    optionsNotice,
+    setNotice,
+    clearNotice,
+    scrapeStage,
+    scrapeStarted,
+    scrapeFailed,
+    scrapeSucceeded,
+    scrapeNote,
+    lastScrape,
+    crawlStage,
+    crawlStarted,
+    crawlFailed,
+    crawlSucceeded,
+    crawlStatus,
+    setCrawlStatus,
+    crawlJobId,
+    isPolling,
+    isCrawlComplete,
+    crawlForm,
+    updateCrawlForm,
+    resetCrawlForm,
+    crawlData,
+    resetCrawlData,
+    markCrawlDownloaded,
+    hasDownloadedCrawl,
+    showToast,
+    clearToast,
+    toastMessage,
+    credits,
+    setCredits: setCreditsAmount,
+    dispose,
+  } as const;
+};
+
 const formatTimestamp = (iso: string) => {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
@@ -156,6 +396,32 @@ const parseOptionalNumber = (value: string): number | undefined => {
 
   const parsed = Number.parseFloat(trimmed);
   return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const extractDomain = (url: string): string => {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+};
+
+const getStatusDotStyle = (status?: string): CSSProperties => {
+  const getColor = (s?: string) => {
+    if (s === "completed") return colors.success;
+    if (s === "processing" || s === "pending") return colors.heat100;
+    if (s === "failed") return colors.danger;
+    return colors.blackAlpha40;
+  };
+
+  return {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    backgroundColor: getColor(status),
+    display: "inline-block",
+    flexShrink: 0,
+  };
 };
 
 const linesToList = (value: string) =>
@@ -210,11 +476,47 @@ const Popup = () => {
     (initial) => ensurePreferences(initial),
   );
 
-  const storeRef = useRef<PopupStore | undefined>(undefined);
-  if (!storeRef.current) {
-    storeRef.current = new PopupStore();
-  }
-  const store = storeRef.current!;
+  const lastCrawlStatusToastRef = useRef<string | undefined>(undefined);
+
+  const {
+    view: currentView,
+    setView,
+    optionsOpen,
+    toggleOptions,
+    previewExpanded,
+    togglePreview,
+    optionsNotice,
+    setNotice,
+    clearNotice,
+    scrapeStage,
+    scrapeStarted,
+    scrapeFailed,
+    scrapeSucceeded,
+    scrapeNote,
+    lastScrape,
+    crawlStage,
+    crawlStarted,
+    crawlFailed,
+    crawlSucceeded,
+    crawlStatus,
+    setCrawlStatus,
+    crawlJobId,
+    isPolling,
+    isCrawlComplete,
+    crawlForm,
+    updateCrawlForm,
+    resetCrawlForm,
+    crawlData,
+    resetCrawlData,
+    markCrawlDownloaded,
+    hasDownloadedCrawl,
+    showToast,
+    clearToast,
+    toastMessage,
+    credits,
+    setCredits,
+    dispose,
+  } = usePopupLogic();
 
   const [apiKeyDraft, setApiKeyDraft] = useState("");
 
@@ -256,7 +558,7 @@ const Popup = () => {
     }
   }, [isApiLoading, isApiConfigured]);
 
-  useEffect(() => () => store.dispose(), [store]);
+  useEffect(() => () => dispose(), [dispose]);
 
   const normalizedPrefs = useMemo(
     () => ensurePreferences(prefs),
@@ -292,16 +594,70 @@ const Popup = () => {
     [formatsSignature, useMainContent],
   );
 
-  const optionsOpen = store.optionsOpen;
-  const optionsNotice = store.optionsNotice;
-  const previewExpanded = store.previewExpanded;
-  const scrapeStage = store.scrapeStage;
-  const crawlStage = store.crawlStage;
-  const lastScrape = store.lastScrape;
-  const crawlStatus = store.crawlStatus;
-  const currentView = store.view;
-  const crawlForm = store.crawlForm;
-  const toastMessage = store.toastMessage;
+
+  const creditsQuery = useQuery({
+    queryKey: ["credits", effectiveApiKey],
+    queryFn: async () => {
+      const result = await requestCreditUsage({ apiKey: effectiveApiKey });
+      if (result.success && result.data) {
+        return result.data.remainingCredits;
+      }
+      throw new Error(result.error ?? "Failed to fetch credits");
+    },
+    enabled: Boolean(effectiveApiKey),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (!creditsQuery.isSuccess) {
+      if (creditsQuery.isError) {
+        console.warn("Failed to fetch credits", creditsQuery.error);
+      }
+      return;
+    }
+
+    setCredits(creditsQuery.data);
+  }, [creditsQuery.isSuccess, creditsQuery.isError, creditsQuery.error, creditsQuery.data, setCredits]);
+
+  const refreshCrawlStatus = useCallback(
+    async (id: string, key: string) => {
+      try {
+        const status = await requestCrawlStatus({ id, apiKey: key });
+        setCrawlStatus(status);
+        if (!isCrawlStatusFailure(status)) {
+          const summary = `Crawl status: ${status.status ?? "unknown"}`;
+          if (summary !== lastCrawlStatusToastRef.current) {
+            showToast(summary);
+            lastCrawlStatusToastRef.current = summary;
+          }
+        } else {
+          const errorSummary = `Crawl status error: ${status.error}`;
+          if (errorSummary !== lastCrawlStatusToastRef.current) {
+            showToast(errorSummary);
+            lastCrawlStatusToastRef.current = errorSummary;
+          }
+        }
+      } catch (error) {
+        setCrawlStatus({
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unable to fetch crawl status",
+        });
+        const errorSummary =
+          error instanceof Error
+            ? error.message
+            : "Unable to fetch crawl status";
+        if (errorSummary !== lastCrawlStatusToastRef.current) {
+          showToast(errorSummary);
+          lastCrawlStatusToastRef.current = errorSummary;
+        }
+      }
+    },
+    [setCrawlStatus, showToast],
+  );
 
   useEffect(() => {
     if (!toastMessage) {
@@ -309,13 +665,71 @@ const Popup = () => {
     }
 
     const timer = window.setTimeout(() => {
-      store.clearToast();
-    }, 1_000);
+      clearToast();
+    }, 3_000);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [toastMessage, store]);
+  }, [toastMessage, clearToast]);
+
+  // Auto-polling effect for crawl status
+  useEffect(() => {
+    if (!crawlJobId || !effectiveApiKey) {
+      return;
+    }
+
+    // Poll immediately
+    void refreshCrawlStatus(crawlJobId, effectiveApiKey);
+
+    // Continue polling if crawl is in progress
+    if (!isPolling) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void refreshCrawlStatus(crawlJobId, effectiveApiKey);
+    }, 3_000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [crawlJobId, isPolling, effectiveApiKey, refreshCrawlStatus]);
+
+  // Auto-download effect when crawl completes
+  useEffect(() => {
+    if (!isCrawlComplete || crawlData.length === 0 || hasDownloadedCrawl || !tabUrl) {
+      return;
+    }
+
+    // Download all crawled data as JSON
+    const downloadCrawlData = async () => {
+      try {
+        const content = JSON.stringify(crawlData, null, 2);
+        const { filename } = await triggerDownload({
+          sourceUrl: tabUrl,
+          content,
+          mimeType: "application/json",
+          format: "json",
+        });
+        markCrawlDownloaded();
+        showToast(`Crawl complete. Downloaded ${filename}`);
+      } catch (error) {
+        showToast(
+          error instanceof Error ? `Download failed: ${error.message}` : "Download failed",
+        );
+      }
+    };
+
+    void downloadCrawlData();
+  }, [
+    isCrawlComplete,
+    crawlData,
+    hasDownloadedCrawl,
+    tabUrl,
+    markCrawlDownloaded,
+    showToast,
+  ]);
 
   const toggleFormat = async (format: FirecrawlFormatKey) => {
     const removalAttemptsLast =
@@ -323,11 +737,9 @@ const Popup = () => {
     const nextFormats = computeNextFormats(activeFormats, format);
 
     if (removalAttemptsLast) {
-      store.setNotice(
-        "At least one format must remain selected. Markdown restored.",
-      );
+      setNotice("At least one format must remain selected. Markdown restored.");
     } else {
-      store.clearNotice();
+      clearNotice();
     }
 
     await setPrefs((current) => {
@@ -354,7 +766,7 @@ const Popup = () => {
     action: () => Promise<T>,
   ): Promise<T | undefined> => {
     if (!tabUrl) {
-      store.scrapeFailed(
+      scrapeFailed(
         intent,
         "Unable to detect the active tab URL. Refresh and try again.",
       );
@@ -362,16 +774,16 @@ const Popup = () => {
     }
 
     if (!effectiveApiKey) {
-      store.scrapeFailed(intent, "Add your Firecrawl API key first.");
+      scrapeFailed(intent, "Add your Firecrawl API key first.");
       return undefined;
     }
 
-    store.scrapeStarted(intent);
+    scrapeStarted(intent);
 
     try {
       return await action();
     } catch (error) {
-      store.scrapeFailed(
+      scrapeFailed(
         intent,
         error instanceof Error ? error.message : "Unexpected error",
       );
@@ -393,47 +805,48 @@ const Popup = () => {
     }
 
     if (isScrapeFailure(response)) {
-      store.scrapeFailed("preview", response.error, response);
+      scrapeFailed("preview", response.error, response);
       return;
     }
 
-    store.scrapeSucceeded("preview", response, "Scrape completed.");
+    scrapeSucceeded("preview", response, "Scrape completed.");
+    void creditsQuery.refetch();
 
     if (navigator?.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(response.primary);
-        store.scrapeNote("preview", "Scrape copied to clipboard.");
-        store.showToast("Scrape copied to clipboard.");
+        scrapeNote("preview", "Scrape copied to clipboard.");
+        showToast("Scrape copied to clipboard.");
       } catch (error) {
-        store.showToast(
+        showToast(
           error instanceof Error
             ? `Scrape ready. Copy failed: ${error.message}`
             : "Scrape ready. Unable to auto-copy.",
         );
       }
     } else {
-      store.showToast("Scrape ready. Copy from the preview.");
+      showToast("Scrape ready. Copy from the preview.");
     }
   };
 
   const handleCopy = async () => {
-    if (!store.lastScrape) {
-      store.scrapeFailed("copy", "Scrape the page first to copy content.");
+    if (!lastScrape) {
+      scrapeFailed("copy", "Scrape the page first to copy content.");
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(store.lastScrape.primary);
-      store.scrapeNote("copy", "Copied to clipboard.");
-      store.showToast("Copied to clipboard.");
+      await navigator.clipboard.writeText(lastScrape.primary);
+      scrapeNote("copy", "Copied to clipboard.");
+      showToast("Copied to clipboard.");
     } catch (error) {
-      store.scrapeFailed(
+      scrapeFailed(
         "copy",
         error instanceof Error
           ? `Copy failed: ${error.message}`
           : "Copy failed",
       );
-      store.showToast(
+      showToast(
         error instanceof Error
           ? `Copy failed: ${error.message}`
           : "Copy failed",
@@ -442,8 +855,8 @@ const Popup = () => {
   };
 
   const handleDownload = async () => {
-    if (!store.lastScrape) {
-      store.scrapeFailed(
+    if (!lastScrape) {
+      scrapeFailed(
         "download",
         "Scrape the page first to download content.",
       );
@@ -451,7 +864,7 @@ const Popup = () => {
     }
 
     if (!tabUrl) {
-      store.scrapeFailed(
+      scrapeFailed(
         "download",
         "Unable to detect the active tab URL. Refresh and try again.",
       );
@@ -461,21 +874,21 @@ const Popup = () => {
     try {
       const { filename } = await triggerDownload({
         sourceUrl: tabUrl,
-        content: store.lastScrape.primary,
-        mimeType: store.lastScrape.mimeType,
-        format: store.lastScrape.format,
+        content: lastScrape.primary,
+        mimeType: lastScrape.mimeType,
+        format: lastScrape.format,
       });
 
-      store.scrapeNote("download", `Download started (${filename}).`);
-      store.showToast(`Download started (${filename})`);
+      scrapeNote("download", `Download started (${filename}).`);
+      showToast(`Download started (${filename})`);
     } catch (error) {
-      store.scrapeFailed(
+      scrapeFailed(
         "download",
         error instanceof Error
           ? `Download failed: ${error.message}`
           : "Download failed",
       );
-      store.showToast(
+      showToast(
         error instanceof Error
           ? `Download failed: ${error.message}`
           : "Download failed",
@@ -483,56 +896,22 @@ const Popup = () => {
     }
   };
 
-  const refreshCrawlStatus = useCallback(
-    async (id: string, key: string) => {
-      try {
-        const status = await requestCrawlStatus({ id, apiKey: key });
-        store.setCrawlStatus(status);
-        if (!isCrawlStatusFailure(status)) {
-          const summary = `Crawl status: ${status.status ?? 'unknown'}`
-          if (summary !== store.toastMessage) {
-            store.showToast(summary)
-          }
-        } else {
-          const errorSummary = `Crawl status error: ${status.error}`
-          if (errorSummary !== store.toastMessage) {
-            store.showToast(errorSummary)
-          }
-        }
-      } catch (error) {
-        store.setCrawlStatus({
-          ok: false,
-          error:
-            error instanceof Error
-              ? error.message
-              : "Unable to fetch crawl status",
-        });
-        const errorSummary =
-          error instanceof Error
-            ? error.message
-            : 'Unable to fetch crawl status'
-        if (errorSummary !== store.toastMessage) {
-          store.showToast(errorSummary)
-        }
-      }
-    },
-    [store],
-  );
-
   const handleCrawlStart = async () => {
     if (!tabUrl) {
-      store.crawlFailed("Unable to detect the active tab URL.");
+      crawlFailed("Unable to detect the active tab URL.");
       return;
     }
 
     if (!effectiveApiKey) {
-      store.crawlFailed("Add your Firecrawl API key first.");
+      crawlFailed("Add your Firecrawl API key first.");
       return;
     }
 
-    store.crawlStarted();
+    crawlStarted();
+    lastCrawlStatusToastRef.current = undefined;
+    resetCrawlData();
 
-    const preparedOptions = buildCrawlOptions(store.crawlForm, requestOptions);
+    const preparedOptions = buildCrawlOptions(crawlForm, requestOptions);
 
     try {
       const response = await requestCrawlStart({
@@ -542,26 +921,24 @@ const Popup = () => {
       });
 
       if (isCrawlStartFailure(response)) {
-        store.crawlFailed(response.error, response);
+        crawlFailed(response.error, response);
         return;
       }
 
-      store.crawlSucceeded(response);
-      store.showToast("Crawl started.");
+      crawlSucceeded(response);
+      showToast("Crawl started.");
+      void creditsQuery.refetch();
       await refreshCrawlStatus(response.id, effectiveApiKey);
     } catch (error) {
       const errorSummary =
         error instanceof Error ? error.message : "Unable to start crawl job";
-      store.crawlFailed(errorSummary);
-      store.showToast(errorSummary);
+      crawlFailed(errorSummary);
+      showToast(errorSummary);
     }
   };
 
   const isScraping = scrapeStage.tag === "loading";
   const isCrawling = crawlStage.tag === "loading";
-
-  const crawlJobId =
-    crawlStage.tag === "success" ? crawlStage.payload.id : undefined;
 
   const crawlStatusSummary = useMemo(() => {
     if (!crawlStatus) {
@@ -586,18 +963,18 @@ const Popup = () => {
   }, [activeFormats]);
 
   const renderScrapeOptions = () => (
-    <section style={styles.card}>
+    <div>
       <button
         style={{
           ...styles.disclosure,
           ...(optionsOpen ? styles.disclosureActive : {}),
         }}
         onClick={() => {
-          store.toggleOptions();
+          toggleOptions();
         }}
         type="button"
       >
-        <span>Scrape options</span>
+        <span>Options</span>
         <span style={styles.disclosureSummary}>{formatSummary}</span>
       </button>
       {optionsOpen ? (
@@ -640,7 +1017,8 @@ const Popup = () => {
           {optionsNotice ? <p style={styles.notice}>{optionsNotice}</p> : null}
         </div>
       ) : null}
-    </section>
+      <div style={styles.sectionDivider} />
+    </div>
   );
 
   const renderResultCard = () => {
@@ -653,44 +1031,14 @@ const Popup = () => {
     const preview = previewSnippet(lastScrape.primary, previewExpanded);
 
     return (
-      <section style={styles.card}>
-        <header style={styles.resultHeader}>
-          <div style={styles.resultHeading}>
-            <span style={styles.resultBadge}>
-              {formatLabel(lastScrape.format)}
-            </span>
-            <span style={styles.resultMeta}>
-              Retrieved {formatTimestamp(lastScrape.timestamp)}
-            </span>
-          </div>
-          <div style={styles.resultActions}>
-            <button
-              style={styles.secondaryButton}
-              onClick={() => {
-                void handleCopy();
-              }}
-              type="button"
-            >
-              Copy
-            </button>
-            <button
-              style={styles.secondaryButton}
-              onClick={() => {
-                void handleDownload();
-              }}
-              type="button"
-            >
-              Download
-            </button>
-          </div>
-        </header>
+      <div>
         <div style={styles.previewContainer}>
           <pre style={styles.preview}>{preview}</pre>
           {hasOverflow ? (
             <button
               style={styles.linkButton}
               onClick={() => {
-                store.togglePreview();
+                togglePreview();
               }}
               type="button"
             >
@@ -698,280 +1046,266 @@ const Popup = () => {
             </button>
           ) : null}
         </div>
-      </section>
+        <div style={styles.resultActions}>
+          <button
+            style={styles.tertiaryButton}
+            onClick={() => {
+              void handleCopy();
+            }}
+            type="button"
+          >
+            Copy
+          </button>
+          <button
+            style={styles.tertiaryButton}
+            onClick={() => {
+              void handleDownload();
+            }}
+            type="button"
+          >
+            Download
+          </button>
+        </div>
+      </div>
     );
   };
 
   const renderScrapeView = () => (
     <>
-      <section style={styles.card}>
-        <div style={styles.cardHeader}>
-          <h2 style={styles.cardTitle}>Scrape</h2>
-        </div>
-        <div>
-          <p style={styles.microcopy}>Uses 1 Firecrawl credit</p>
-          <button
-            style={{
-              ...styles.primaryButton,
-              ...(isScraping ? styles.primaryButtonBusy : {}),
-            }}
-            disabled={isScraping || !tabUrl}
-            onClick={() => {
-              void handleScrape();
-            }}
-            type="button"
-          >
-            {isScraping ? "Scraping…" : "Scrape page"}
-          </button>
-          {scrapeStage.tag === "error" ? (
-            <p style={styles.error}>{scrapeStage.message}</p>
-          ) : null}
-          {scrapeStage.tag === "success" && scrapeStage.note ? (
-            <p style={styles.success}>{scrapeStage.note}</p>
-          ) : null}
-        </div>
-      </section>
+      <div>
+        <button
+          style={{
+            ...styles.primaryButton,
+            ...(isScraping ? styles.primaryButtonBusy : {}),
+          }}
+          disabled={isScraping || !tabUrl}
+          onClick={() => {
+            void handleScrape();
+          }}
+          type="button"
+        >
+          {isScraping ? "Scraping…" : "Scrape page"}
+        </button>
+        <p style={styles.microcopy}>1 credit</p>
+        {scrapeStage.tag === "error" ? (
+          <p style={styles.error}>{scrapeStage.message}</p>
+        ) : null}
+      </div>
+      <div style={styles.sectionDivider} />
       {renderScrapeOptions()}
       {renderResultCard()}
     </>
   );
 
   const renderCrawlView = () => (
-    <section style={styles.card}>
-      <div style={styles.cardHeader}>
-        <h2 style={styles.cardTitle}>Crawl</h2>
-        <p style={styles.cardSubtitle}>
-          Launch a job for the active domain. Runs from the current URL
-        </p>
-      </div>
-      <div>
-        <button
-          style={{
-            ...styles.primaryButton,
-            ...(isCrawling ? styles.primaryButtonBusy : {}),
-          }}
-          disabled={isCrawling || !tabUrl}
-          onClick={() => {
-            void handleCrawlStart();
-          }}
-          type="button"
-        >
-          {isCrawling ? "Starting crawl…" : "Start crawl"}
-        </button>
-        <div style={styles.formStack}>
+    <div>
+      <button
+        style={{
+          ...styles.primaryButton,
+          ...(isCrawling ? styles.primaryButtonBusy : {}),
+        }}
+        disabled={isCrawling || !tabUrl}
+        onClick={() => {
+          void handleCrawlStart();
+        }}
+        type="button"
+      >
+        {isCrawling ? "Starting crawl…" : "Start crawl"}
+      </button>
+      <div style={styles.formStack}>
+        <label style={styles.fieldLabel}>
+          <span>Prompt</span>
+          <textarea
+            rows={2}
+            style={styles.textarea}
+            placeholder={DEFAULT_CRAWL_FORM.prompt}
+            value={crawlForm.prompt}
+            onChange={(event) => {
+              updateCrawlForm("prompt", event.target.value);
+            }}
+          />
+        </label>
+        <div style={styles.fieldRow}>
           <label style={styles.fieldLabel}>
-            <span>Prompt (optional)</span>
-            <textarea
-              rows={2}
-              style={styles.textarea}
-              placeholder="Summarize product docs…"
-              value={crawlForm.prompt}
+            <span>Max pages</span>
+            <input
+              style={styles.input}
+              type="number"
+              min={1}
+              placeholder={DEFAULT_CRAWL_FORM.limit}
+              value={crawlForm.limit}
               onChange={(event) => {
-                store.updateCrawlForm("prompt", event.target.value);
+                updateCrawlForm("limit", event.target.value);
               }}
             />
           </label>
-          <div style={styles.fieldRow}>
-            <label style={styles.fieldLabel}>
-              <span>Max pages</span>
-              <input
-                style={styles.input}
-                type="number"
-                min={1}
-                placeholder="100"
-                value={crawlForm.limit}
-                onChange={(event) => {
-                  store.updateCrawlForm("limit", event.target.value);
-                }}
-              />
-            </label>
-            <label style={styles.fieldLabel}>
-              <span>Max depth</span>
-              <input
-                style={styles.input}
-                type="number"
-                min={0}
-                placeholder="1"
-                value={crawlForm.maxDiscoveryDepth}
-                onChange={(event) => {
-                  store.updateCrawlForm(
-                    "maxDiscoveryDepth",
-                    event.target.value,
-                  );
-                }}
-              />
-            </label>
-          </div>
-          <div style={styles.fieldRow}>
-            <label style={styles.fieldLabel}>
-              <span>Sitemap mode</span>
-              <select
-                style={styles.select}
-                value={crawlForm.sitemap}
-                onChange={(event) => {
-                  store.updateCrawlForm(
-                    "sitemap",
-                    event.target.value as SitemapMode,
-                  );
-                }}
-              >
-                <option value="include">Include sitemap</option>
-                <option value="skip">Skip sitemap</option>
-              </select>
-            </label>
-            <label style={styles.fieldLabel}>
-              <span>Delay (seconds)</span>
-              <input
-                style={styles.input}
-                type="number"
-                min={0}
-                step={0.1}
-                placeholder="0.5"
-                value={crawlForm.delay}
-                onChange={(event) => {
-                  store.updateCrawlForm("delay", event.target.value);
-                }}
-              />
-            </label>
-          </div>
-          <div style={styles.fieldRow}>
-            <label style={styles.fieldLabel}>
-              <span>Max concurrency</span>
-              <input
-                style={styles.input}
-                type="number"
-                min={1}
-                placeholder="4"
-                value={crawlForm.maxConcurrency}
-                onChange={(event) => {
-                  store.updateCrawlForm("maxConcurrency", event.target.value);
-                }}
-              />
-            </label>
-          </div>
-          <div style={styles.checkGrid}>
-            <label style={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={crawlForm.ignoreQueryParameters}
-                onChange={(event) => {
-                  store.updateCrawlForm(
-                    "ignoreQueryParameters",
-                    event.target.checked,
-                  );
-                }}
-              />
-              <span>Ignore query parameters</span>
-            </label>
-            <label style={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={crawlForm.crawlEntireDomain}
-                onChange={(event) => {
-                  store.updateCrawlForm(
-                    "crawlEntireDomain",
-                    event.target.checked,
-                  );
-                }}
-              />
-              <span>Crawl entire domain</span>
-            </label>
-            <label style={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={crawlForm.allowSubdomains}
-                onChange={(event) => {
-                  store.updateCrawlForm(
-                    "allowSubdomains",
-                    event.target.checked,
-                  );
-                }}
-              />
-              <span>Allow subdomains</span>
-            </label>
-            <label style={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={crawlForm.allowExternalLinks}
-                onChange={(event) => {
-                  store.updateCrawlForm(
-                    "allowExternalLinks",
-                    event.target.checked,
-                  );
-                }}
-              />
-              <span>Allow external links</span>
-            </label>
-          </div>
-          <div style={styles.fieldRow}>
-            <label style={styles.fieldLabel}>
-              <span>Include paths (one per line)</span>
-              <textarea
-                rows={2}
-                style={styles.textarea}
-                placeholder="docs/.*"
-                value={crawlForm.includePaths}
-                onChange={(event) => {
-                  store.updateCrawlForm("includePaths", event.target.value);
-                }}
-              />
-            </label>
-            <label style={styles.fieldLabel}>
-              <span>Exclude paths (one per line)</span>
-              <textarea
-                rows={2}
-                style={styles.textarea}
-                placeholder="blog/.*"
-                value={crawlForm.excludePaths}
-                onChange={(event) => {
-                  store.updateCrawlForm("excludePaths", event.target.value);
-                }}
-              />
-            </label>
-          </div>
-        </div>
-        {crawlStage.tag === "error" ? (
-          <p style={styles.error}>{crawlStage.message}</p>
-        ) : null}
-        {crawlStage.tag === "success" ? (
-          <p style={styles.success}>Crawl started.</p>
-        ) : null}
-        {crawlJobId ? (
-          <div style={styles.crawlInfo}>
-            <p style={styles.crawlText}>Job ID: {crawlJobId}</p>
-            <button
-              style={styles.linkButton}
-              onClick={() => {
-                if (!crawlJobId || !effectiveApiKey) {
-                  return;
-                }
-
-                void refreshCrawlStatus(crawlJobId, effectiveApiKey);
+          <label style={styles.fieldLabel}>
+            <span>Max depth</span>
+            <input
+              style={styles.input}
+              type="number"
+              min={0}
+              placeholder={DEFAULT_CRAWL_FORM.maxDiscoveryDepth}
+              value={crawlForm.maxDiscoveryDepth}
+              onChange={(event) => {
+                updateCrawlForm("maxDiscoveryDepth", event.target.value);
               }}
-              type="button"
+            />
+          </label>
+        </div>
+        <div style={styles.fieldRow}>
+          <label style={styles.fieldLabel}>
+            <span>Sitemap mode</span>
+            <select
+              style={styles.select}
+              value={crawlForm.sitemap}
+              onChange={(event) => {
+                updateCrawlForm("sitemap", event.target.value as SitemapMode);
+              }}
             >
-              Refresh status
-            </button>
-          </div>
-        ) : null}
-        {crawlStatusSummary ? (
-          <p style={styles.muted}>{crawlStatusSummary}</p>
-        ) : null}
+              <option value="include">Include sitemap</option>
+              <option value="skip">Skip sitemap</option>
+            </select>
+          </label>
+          <label style={styles.fieldLabel}>
+            <span>Delay (seconds)</span>
+            <input
+              style={styles.input}
+              type="number"
+              min={0}
+              step={0.1}
+              placeholder={DEFAULT_CRAWL_FORM.delay}
+              value={crawlForm.delay}
+              onChange={(event) => {
+                updateCrawlForm("delay", event.target.value);
+              }}
+            />
+          </label>
+        </div>
+        <div style={styles.fieldRow}>
+          <label style={styles.fieldLabel}>
+            <span>Max concurrency</span>
+            <input
+              style={styles.input}
+              type="number"
+              min={1}
+              placeholder={DEFAULT_CRAWL_FORM.maxConcurrency}
+              value={crawlForm.maxConcurrency}
+              onChange={(event) => {
+                updateCrawlForm("maxConcurrency", event.target.value);
+              }}
+            />
+          </label>
+        </div>
+        <div style={styles.checkGrid}>
+          <label style={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={crawlForm.ignoreQueryParameters}
+              onChange={(event) => {
+                updateCrawlForm("ignoreQueryParameters", event.target.checked);
+              }}
+            />
+            <span>Ignore query parameters</span>
+          </label>
+          <label style={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={crawlForm.crawlEntireDomain}
+              onChange={(event) => {
+                updateCrawlForm("crawlEntireDomain", event.target.checked);
+              }}
+            />
+            <span>Crawl entire domain</span>
+          </label>
+          <label style={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={crawlForm.allowSubdomains}
+              onChange={(event) => {
+                updateCrawlForm("allowSubdomains", event.target.checked);
+              }}
+            />
+            <span>Allow subdomains</span>
+          </label>
+          <label style={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={crawlForm.allowExternalLinks}
+              onChange={(event) => {
+                updateCrawlForm("allowExternalLinks", event.target.checked);
+              }}
+            />
+            <span>Allow external links</span>
+          </label>
+        </div>
+        <div style={styles.fieldRow}>
+          <label style={styles.fieldLabel}>
+            <span>Include paths (one per line)</span>
+            <textarea
+              rows={2}
+              style={styles.textarea}
+              placeholder={DEFAULT_CRAWL_FORM.includePaths}
+              value={crawlForm.includePaths}
+              onChange={(event) => {
+                updateCrawlForm("includePaths", event.target.value);
+              }}
+            />
+          </label>
+          <label style={styles.fieldLabel}>
+            <span>Exclude paths (one per line)</span>
+            <textarea
+              rows={2}
+              style={styles.textarea}
+              placeholder={DEFAULT_CRAWL_FORM.excludePaths}
+              value={crawlForm.excludePaths}
+              onChange={(event) => {
+                updateCrawlForm("excludePaths", event.target.value);
+              }}
+            />
+          </label>
+        </div>
       </div>
-    </section>
+      {crawlStage.tag === "error" ? (
+        <p style={styles.error}>{crawlStage.message}</p>
+      ) : null}
+      {crawlStatusSummary && crawlJobId ? (
+        <div style={styles.crawlStatusRow}>
+          <span
+            style={getStatusDotStyle(
+              crawlStatus?.ok ? crawlStatus.status : undefined,
+            )}
+          />
+          <p style={styles.crawlText}>{crawlStatusSummary}</p>
+          {isPolling && (
+            <span style={styles.pollingIndicator}>(auto-refresh)</span>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 
   return (
     <main style={styles.container}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>Firecrawl Assist</h1>
-        <div style={styles.headerSubtitle}>
-          <span style={styles.headerSubtitleTitle}>
-            {tabTitle || "Loading active tab…"}
+      <header style={styles.compactHeader}>
+        <div style={styles.apiDomainRow}>
+          <span style={styles.domain}>
+            {extractDomain(tabUrl) || "Detecting..."}
           </span>
-          <span style={styles.headerSubtitleUrl}>
-            {tabUrl || "Detecting active tab…"}
-          </span>
+          {credits !== undefined && (
+            <span style={styles.credits}>
+              {credits.toLocaleString()} credits
+            </span>
+          )}
+          {!apiEditorVisible && isApiConfigured && (
+            <button
+              style={styles.editKeyButton}
+              onClick={() => setApiEditorVisible(true)}
+              type="button"
+            >
+              🔑 Edit key
+            </button>
+          )}
         </div>
       </header>
 
@@ -999,7 +1333,7 @@ const Popup = () => {
                     const trimmed = apiKeyDraft.trim();
                     await setApiKey(trimmed);
                     setApiKeyDraft(trimmed);
-                    store.clearNotice();
+                    clearNotice();
                     setApiEditorVisible(false);
                   })();
                 }}
@@ -1013,7 +1347,7 @@ const Popup = () => {
                   onClick={() => {
                     setApiEditorVisible(false);
                     setApiKeyDraft(apiKey);
-                    store.clearNotice();
+                    clearNotice();
                   }}
                   type="button"
                 >
@@ -1022,21 +1356,7 @@ const Popup = () => {
               ) : null}
             </div>
           </div>
-        ) : (
-          <div style={styles.apiStatusRow}>
-            <span style={styles.successPill}>✓ API key stored</span>
-            <button
-              style={styles.linkButton}
-              onClick={() => {
-                setApiEditorVisible(true);
-                setApiKeyDraft(apiKey);
-              }}
-              type="button"
-            >
-              Edit
-            </button>
-          </div>
-        )}
+        ) : null}
       </section>
 
       <nav style={styles.viewToggle}>
@@ -1046,7 +1366,7 @@ const Popup = () => {
             ...(currentView === "scrape" ? styles.viewButtonActive : {}),
           }}
           onClick={() => {
-            store.setView("scrape");
+            setView("scrape");
           }}
           type="button"
         >
@@ -1058,7 +1378,7 @@ const Popup = () => {
             ...(currentView === "crawl" ? styles.viewButtonActive : {}),
           }}
           onClick={() => {
-            store.setView("crawl");
+            setView("crawl");
           }}
           type="button"
         >
@@ -1252,22 +1572,22 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: radii.sm,
     border: "none",
     backgroundColor: colors.heat100,
-    color: "#ffffff",
+    color: colors.backgroundLighter,
     fontSize: font.size.md,
     fontWeight: font.weight.medium,
     cursor: "pointer",
-    boxShadow: "0 5px 15px rgba(250, 93, 25, 0.25)",
+    boxShadow: "0 4px 12px rgba(250, 93, 25, 0.2)",
   },
   primaryButtonSmall: {
     padding: `${space.xs}px ${space.md}px`,
     borderRadius: radii.sm,
     border: "none",
     backgroundColor: colors.heat100,
-    color: colors.accentBlack,
+    color: colors.backgroundLighter,
     fontSize: font.size.sm,
-    fontWeight: font.weight.semibold,
+    fontWeight: font.weight.medium,
     cursor: "pointer",
-    boxShadow: "0 8px 16px rgba(250, 93, 25, 0.2)",
+    boxShadow: "0 5px 16px rgba(250, 93, 25, 0.2)",
   },
   toast: {
     position: "fixed",
@@ -1497,6 +1817,70 @@ const styles: Record<string, CSSProperties> = {
     fontSize: font.size.xs,
     color: colors.blackAlpha56,
   },
+  compactHeader: {
+    marginBottom: space.md,
+  },
+  apiDomainRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: space.sm,
+    fontSize: font.size.xs,
+    color: colors.blackAlpha56,
+  },
+  keyIcon: {
+    fontSize: font.size.sm,
+  },
+  domain: {
+    flex: 1,
+    fontWeight: font.weight.medium,
+    color: colors.blackAlpha72,
+  },
+  editKeyButton: {
+    padding: 0,
+    border: "none",
+    background: "none",
+    color: colors.heat100,
+    cursor: "pointer",
+    fontSize: font.size.xs,
+    fontWeight: font.weight.medium,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: colors.borderFaint,
+    margin: `${space.md}px 0`,
+  },
+  tertiaryButton: {
+    padding: `${space.xs}px ${space.sm}px`,
+    border: "none",
+    background: "none",
+    color: colors.blackAlpha72,
+    fontSize: font.size.xs,
+    cursor: "pointer",
+    textDecoration: "underline",
+    fontWeight: font.weight.medium,
+  },
+  crawlStatusRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: space.sm,
+    marginTop: space.sm,
+  },
+  pollingIndicator: {
+    fontSize: font.size.xs,
+    color: colors.blackAlpha56,
+    fontStyle: "italic",
+  },
+  credits: {
+    fontSize: font.size.xs,
+    color: colors.blackAlpha56,
+    fontWeight: font.weight.medium,
+  },
 };
 
-export default observer(Popup);
+const PopupWithQueryClient = () => (
+  <QueryClientProvider client={queryClient}>
+    <Popup />
+  </QueryClientProvider>
+);
+
+export default PopupWithQueryClient;

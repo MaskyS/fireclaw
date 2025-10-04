@@ -136,6 +136,17 @@ export type CrawlStatusResponseBody =
       payload?: FirecrawlCrawlStatus
     }
 
+export type CreditUsageResponse = {
+  success: boolean
+  data?: {
+    remainingCredits: number
+    planCredits: number
+    billingPeriodStart: string | null
+    billingPeriodEnd: string | null
+  }
+  error?: string
+}
+
 export type FirecrawlMessageHandler<Req, Res> = PlasmoMessaging.MessageHandler<Req, Res>
 
 export const DEFAULT_FORMAT_KEYS: FirecrawlFormatKey[] = ['markdown']
@@ -414,4 +425,21 @@ export const performCrawlStatus = async (
     },
     status
   }
+}
+
+export const fetchCreditUsage = async (apiKey: string): Promise<CreditUsageResponse> => {
+  const { data, status } = await requestFirecrawl<CreditUsageResponse>({
+    apiKey,
+    path: '/team/credit-usage',
+    init: { method: 'GET' }
+  })
+
+  if (!data || !data.success) {
+    return {
+      success: false,
+      error: data?.error ?? 'Failed to fetch credit usage'
+    }
+  }
+
+  return data
 }

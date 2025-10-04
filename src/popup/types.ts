@@ -48,19 +48,30 @@ export type CrawlFormState = {
 }
 
 export const DEFAULT_CRAWL_FORM: CrawlFormState = {
-  prompt: '',
-  includePaths: '',
-  excludePaths: '',
-  limit: '',
-  maxDiscoveryDepth: '',
+  prompt: 'Summarize product docs…',
+  includePaths: 'docs/.*',
+  excludePaths: 'blog/.*',
+  limit: '100',
+  maxDiscoveryDepth: '1',
   sitemap: 'include',
   ignoreQueryParameters: false,
   crawlEntireDomain: false,
   allowExternalLinks: false,
   allowSubdomains: false,
+  delay: '0.5',
+  maxConcurrency: '4'
+}
+
+export const createEmptyCrawlForm = (): CrawlFormState => ({
+  ...DEFAULT_CRAWL_FORM,
+  prompt: '',
+  includePaths: '',
+  excludePaths: '',
+  limit: '',
+  maxDiscoveryDepth: '',
   delay: '',
   maxConcurrency: ''
-}
+})
 
 export type LastScrape = {
   primary: string

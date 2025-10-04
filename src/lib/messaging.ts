@@ -6,11 +6,12 @@ import type {
   CrawlStartResponseBody,
   CrawlStatusRequestBody,
   CrawlStatusResponseBody,
+  CreditUsageResponse,
   ScrapeRequestBody,
   ScrapeResponseBody
 } from './firecrawl'
 
-type MessageName = 'scrape' | 'crawl-start' | 'crawl-status'
+type MessageName = 'scrape' | 'crawl-start' | 'crawl-status' | 'credit-usage'
 
 type SendFx = <Req, Res>(input: {
   name: MessageName
@@ -34,5 +35,11 @@ export const requestCrawlStart = (body: CrawlStartRequestBody) =>
 export const requestCrawlStatus = (body: CrawlStatusRequestBody) =>
   sendMessage<CrawlStatusRequestBody, CrawlStatusResponseBody>({
     name: 'crawl-status',
+    body: R.clone(body)
+  })
+
+export const requestCreditUsage = (body: { apiKey?: string }) =>
+  sendMessage<{ apiKey?: string }, CreditUsageResponse>({
+    name: 'credit-usage',
     body: R.clone(body)
   })
